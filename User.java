@@ -1,12 +1,35 @@
-public class User {
-    protected String name;
-    protected int id;
+import java.io.Serializable;
+import java.util.Objects;
 
-    public User(String name, int id) {
+public class User implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    private String userId;
+    private String name;
+
+    public User(String userId, String name) {
+        this.userId = userId;
         this.name = name;
-        this.id = id;
     }
 
+    public String getUserId() { return userId; }
     public String getName() { return name; }
-    public int getId() { return id; }
+
+    @Override
+    public String toString() {
+        return userId + " — " + name;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof User)) return false;
+        User u = (User) o;
+        return Objects.equals(userId, u.userId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(userId);
+    }
 }
