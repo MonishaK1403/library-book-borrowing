@@ -1,82 +1,65 @@
-import java.util.*;
-import java.io.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
-public class Library {
-    private ArrayList<Book> books = new ArrayList<>();
-    private final String FILE_NAME = "books.txt";
+public class Library implements Serializable {
+    private static final long serialVersionUID = 1L;
 
-    public void addBook(Book book) {
-        books.add(book);
-        saveToFile();
+    private List<Book> books = new ArrayList<>();
+    private List<User> users = new ArrayList<>();
+
+    public synchronized void addBook(Book book) {
+        if (!books.contains(book)) books.add(book);
     }
 
-    public void borrowBook(String title) {
-        try {
-            for (Book b : books) {
-                if (b.getTitle().equalsIgnoreCase(title)) {
-                    if (!b.isBorrowed()) {
-                        b.borrowBook();
-                        System.out.println("You borrowed: " + b.getTitle());
-                        saveToFile();
-                        return;
-                    } else {
-                        throw new Exception("Book already borrowed!");
-                    }
-                }
+    public synchronized void removeBookById(String id) {
+        books.removeIf(b -> b.getId().equals(id));
+    }
+
+    public synchronized Optional<Book> findBookById(String id) {
+        return books.stream().filter(b -> b.getId().equals(id)).findFirst();
+    }
+
+    public synchronized List<Book> getBooks() {
+        return new ArrayList<>(books);
+    }
+
+    public synchronized void addUser(User user) {
+        if (!users.contains(user)) users.add(user);
+    }
+
+    public synchronized List<User> getUsers() {
+        return new ArrayList<>(users);
+    }
+
+    public synchronized Optional<User> findUserById(String userId) {
+        return users.stream().filter(u -> u.getUserId().equals(userId)).findFirst();
+    }
+
+    public synchronized boolean borrowBook(String bookId, String userId) {
+        Optional<Book> ob = findBookById(bookId);
+        Optional<User> ou = findUserById(userId);
+        if (ob.isPresent() && ou.isPresent()) {
+            Book b = ob.get();
+            if (!b.isBorrowed()) {
+                b.setBorrowed(true);
+                return true;
             }
-            throw new Exception("Book not found!");
-        } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
         }
+        return false;
     }
 
-    public void returnBook(String title) {
-        for (Book b : books) {
-            if (b.getTitle().equalsIgnoreCase(title) && b.isBorrowed()) {
-                b.returnBook();
-                System.out.println("Book returned: " + b.getTitle());
-                saveToFile();
-                return;
+    public synchronized boolean returnBook(String bookId) {
+        Optional<Book> ob = findBookById(bookId);
+        if (ob.isPresent()) {
+            Book b = ob.get();
+            if (b.isBorrowed()) {
+                b.setBorrowed(false);
+                return true;
             }
         }
-        System.out.println("Error: Book not found or not borrowed!");
-    }
-
-    public void showBooks() {
-        if (books.isEmpty()) {
-            System.out.println("No books available.");
-            return;
-        }
-        for (Book b : books) {
-            System.out.println(b);
-        }
-    }
-
-    public void saveToFile() {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_NAME))) {
-            for (Book b : books) {
-                bw.write(b.getTitle() + "," + b.getAuthor() + "," + b.isBorrowed());
-                bw.newLine();
-            }
-        } catch (IOException e) {
-            System.out.println("Error saving data: " + e.getMessage());
-        }
-    }
-
-    public void loadFromFile() {
-        books.clear();
-        try (BufferedReader br = new BufferedReader(new FileReader(FILE_NAME))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
-                Book book = new Book(data[0], data[1]);
-                if (Boolean.parseBoolean(data[2])) {
-                    book.borrowBook();
-                }
-                books.add(book);
-            }
-        } catch (IOException e) {
-            System.out.println("No saved data found, starting fresh...");
-        }
+        return false;
     }
 }
+
